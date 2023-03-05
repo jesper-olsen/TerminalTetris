@@ -10,3 +10,4 @@ Controls:
 * Arrow Left & Arrow Right to move sideways
 * Arrow Up to rotate
 * Arrow Down to drop
+* Space to pause

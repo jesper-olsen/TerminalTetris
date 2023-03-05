@@ -6,7 +6,7 @@ use crossterm::{
 };
 use rand::prelude::*;
 use std::io::{stdout, Write};
-use std::{time};
+use std::time;
 
 // Tetrominos - packed into 7 64 bit numbers.
 // Each tetromino is 4 squares - needs 4*(2+2)=16 bits to describe.
@@ -32,6 +32,7 @@ struct Game {
     tick: u8,
     score: u32,
     board: [[u8; 10]; 20], // 20 rows x 10 cols
+    paused: bool,
 }
 
 // extract a bit packed number from a block
@@ -92,7 +93,8 @@ fn draw_screen(g: &Game) -> Result<()> {
                         stdout,
                         style::PrintStyledContent(s),
                         cursor::MoveTo((j + 1) * 2 + 1, i + 1)
-                    ).ok();
+                    )
+                    .ok();
                 } else {
                     crossterm::queue!(stdout, style::PrintStyledContent("  ".white())).ok();
                 }
@@ -100,10 +102,10 @@ fn draw_screen(g: &Game) -> Result<()> {
             .for_each(drop);
     }
     let n: u16 = g.board.len().try_into().unwrap();
-    let s = format!("Score: {}; Shape: {}", g.score, g.p).white();
+    let s = format!("Score: {}; Shape: {}.{}", g.score, g.p, g.r).white();
     crossterm::queue!(
         stdout,
-        cursor::MoveTo(1, n + 1),
+        cursor::MoveTo(1, n + 2),
         style::PrintStyledContent(s)
     )?;
     stdout.flush()?;
@@ -167,6 +169,9 @@ fn check_hit(g: &mut Game, x: u8, y: u8, r: u8) -> bool {
 }
 
 fn do_tick(g: &mut Game) -> bool {
+    if g.paused {
+        return true;
+    }
     g.tick += 1;
     if g.tick > 30 {
         // only update 1/30 of the time...
@@ -188,9 +193,16 @@ fn do_tick(g: &mut Game) -> bool {
 
 fn runloop(g: &mut Game) -> Result<()> {
     while do_tick(g) {
-        //thread::sleep(time::Duration::from_millis(10));
         if let Ok(true) = poll(time::Duration::from_millis(10)) {
             match read() {
+                Ok(Event::Key(KeyEvent {
+                    code: KeyCode::Char('q'),
+                    ..
+                })) => return Ok(()),
+                Ok(Event::Key(KeyEvent {
+                    code: KeyCode::Char(' '),
+                    ..
+                })) => g.paused = !g.paused,
                 Ok(Event::Key(KeyEvent {
                     code: KeyCode::Left,
                     ..
@@ -230,7 +242,6 @@ fn runloop(g: &mut Game) -> Result<()> {
                         g.r = g.pr;
                     }
                 }
-                Ok(Event::Key(KeyEvent { code: _q, .. })) => return Ok(()),
                 _ => (),
             }
         }
@@ -300,6 +311,7 @@ fn main() -> Result<()> {
         tick: 0,
         score: 0,
         board: [[0; 10]; 20],
+        paused: false,
     };
     new_tetramino(&mut game);
 
