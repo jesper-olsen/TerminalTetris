@@ -11,3 +11,5 @@ Controls:
 * Arrow Up to rotate
 * Arrow Down to drop
 * Space to pause
+
+![alt text](https://raw.githubusercontent.com/jesper-olsen/TerminalTetris/main/Screenshot.png "Game UI")
